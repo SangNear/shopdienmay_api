@@ -9,7 +9,9 @@ const { default: mongoose } = require("mongoose");
 const createProduct = async (req, res) => {
     try {
         const { name, description, categories, price, quantity, specification, salePrice } = req.body;
-        const images = req.file;
+        const images = req.files;
+        console.log("file images", images);
+        
 
         if (!name) {
             return res.status(400).json("Title is not empty");
@@ -20,11 +22,14 @@ const createProduct = async (req, res) => {
             return res.status(500).json("Name already exists! Choose another one");
         }
 
-        let imgBase64URL = null;
-        if (images) {
-            const imgPath = path.join(__dirname, "../images", images.filename);
-            const imgBase64 = fs.readFileSync(imgPath, { encoding: "base64" });
-            imgBase64URL = `data:image/${path.extname(images.filename).slice(1)};base64,${imgBase64}`;
+        let imgBase64URLs = [];
+        if (images && images.length > 0) {
+            for (let i = 0; i < images.length; i++) {
+                const imgPath = path.join(__dirname, "../images", images[i].filename);
+                const imgBase64 = fs.readFileSync(imgPath, { encoding: "base64" });
+                const imgBase64URL = `data:image/${path.extname(images[i].filename).slice(1)};base64,${imgBase64}`;
+                imgBase64URLs.push(imgBase64URL);
+            }
         }
 
         // Validate the single category ID
@@ -43,7 +48,7 @@ const createProduct = async (req, res) => {
                 name,
                 slug: toSlug(name),
                 description,
-                images: imgBase64URL,
+                images: imgBase64URLs,
                 categories: categories, // Using the valid category ID
                 quantity,
                 price,
