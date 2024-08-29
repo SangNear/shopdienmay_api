@@ -5,7 +5,7 @@ const bodyParser = require("body-parser")
 const dotenv = require('dotenv')
 const cors = require('cors')
 const productRoute = require('./routes/product')
-
+const categoryRoute = require('./routes/category')
 
 
 
@@ -27,6 +27,7 @@ mongoose.connect(process.env.MONGO_URL)
 
 
 app.use('/api/v1/product', productRoute)
+app.use('/api/v1/category', categoryRoute)
 
 app.listen(1999, () => {
     console.log("Server is running on http://localhost:1999");

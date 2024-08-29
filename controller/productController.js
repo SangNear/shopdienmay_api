@@ -1,71 +1,74 @@
 const fs = require("fs");
 const path = require("path");
 const Product = require('../models/Product');
-const { toSlug } = require('../lib/utils')
+const { toSlug } = require('../lib/utils');
+const Category = require("../models/Category");
+const { default: mongoose } = require("mongoose");
 
 
 const createProduct = async (req, res) => {
     try {
         const { name, description, categories, price, quantity, specification, salePrice } = req.body;
-
         const images = req.file;
 
         if (!name) {
             return res.status(400).json("Title is not empty");
         }
+
         const nameIsExists = await Product.findOne({ name: name });
         if (nameIsExists) {
-            return res.status(500).json("Name is exists! Choose another one");
+            return res.status(500).json("Name already exists! Choose another one");
         }
-        // if (!image) {
-        //     return res.status(400).json("Image is not empty");
-        // }
+
+        let imgBase64URL = null;
         if (images) {
             const imgPath = path.join(__dirname, "../images", images.filename);
             const imgBase64 = fs.readFileSync(imgPath, { encoding: "base64" });
-            var imgBase64URL = `data:image/${path
-                .extname(images.filename)
-                .slice(1)};base64,${imgBase64}`;
+            imgBase64URL = `data:image/${path.extname(images.filename).slice(1)};base64,${imgBase64}`;
         }
 
+        // Validate the single category ID
+        if (categories) {
+            if (!mongoose.Types.ObjectId.isValid(categories)) {
+                return res.status(400).json("Invalid category ID format.");
+            }
 
-        const newProduct = await Product.create({
-            name,
-            slug: toSlug(name),
-            description,
-            images: imgBase64URL,
-            categories,
-            quantity,
-            price,
-            salePrice,
-            specification,
-        });
+            const category = await Category.findById(categories);
+            if (!category) {
+                return res.status(400).json("Category ID does not exist. Please check again.");
+            }
 
+            // Create the product only if the category is valid and exists
+            const newProduct = new Product({
+                name,
+                slug: toSlug(name),
+                description,
+                images: imgBase64URL,
+                categories: categories, // Using the valid category ID
+                quantity,
+                price,
+                salePrice,
+                specification,
+            });
 
-        // fs.unlinkSync(imgPath);
+            // Associate the product with the category
+            category.products.push(newProduct._id);
+            await category.save();
 
-        // if (categories) {
-        //     for (const categoryId of categories) {
-        //         const category = await Category.findById(categoryId)
-        //         if (category) {
-        //             category.products.push(newProduct._id)
-        //             await category.save()
-        //         }
-        //         else {
-        //             return res.status(500).json("Error while add new product in category")
-        //         }
-        //     }
-        // }
-        await newProduct.save();
-        return res.status(200).json(newProduct);
+            // Save the product after successful association with the category
+            await newProduct.save();
+            return res.status(200).json(newProduct);
+        } else {
+            return res.status(400).json("Category is required.");
+        }
     } catch (error) {
         console.log(error)
-        return res.status(500).json("Product create failed!", error)
+        return res.status(500).json(error)
     }
 };
 const getAllProduct = async (req, res) => {
     try {
-        const products = await Product.find().sort({ createdAt: -1 })
+        const products = await Product.find().sort({ createdAt: -1 }).populate("categories")
         return res.status(200).json(products)
     } catch (error) {
         console.log(error)
@@ -73,4 +76,68 @@ const getAllProduct = async (req, res) => {
     }
 }
 
-module.exports = { createProduct, getAllProduct }
+const getAllProductBySlug = async (req, res) => {
+    try {
+        const productSlug = req.params.slug
+        console.log("slug", productSlug);
+
+
+        // const keywords = productSlug.split(' ').filter(keyword => keyword.trim() !== '');
+
+        // if (keywords.length === 0) {
+        //     return res.status(400).json({ message: 'No valid search keywords provided' });
+        // }
+
+        const keywords = productSlug.replace(/-/g, ' ').split(' ').filter(keyword => keyword.trim() !== '');
+
+        if (keywords.length === 0) {
+            return res.status(400).json({ message: 'No valid search keywords provided' });
+        }
+
+        // Construct search conditions for each keyword
+        const searchConditions = keywords.map(keyword => ({
+            $or: [
+                { name: { $regex: keyword, $options: 'i' } },
+                { slug: { $regex: keyword, $options: 'i' } }
+            ]
+        }));
+
+        // Use $and to ensure all keywords are present
+        const products = await Product.find({ $and: searchConditions });
+        if (products.length === 0) {
+            return res.status(404).json({ message: 'No products found' });
+        }
+        res.status(200).json(products);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error', error });
+    }
+}
+
+const deleteProduct = async (req, res) => {
+    const { productId } = req.params;
+
+    try {
+        // Xóa sản phẩm khỏi bảng Product
+        const deletedProduct = await Product.findByIdAndDelete(productId);
+        if (!deletedProduct) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        // Xóa sản phẩm khỏi bảng Category
+        await Category.updateMany(
+            { products: productId },
+            { $pull: { products: productId } }
+        );
+
+        res.status(200).json({ message: 'Product and its references in categories were deleted successfully' });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: 'Server error', error });
+    }
+}
+
+
+
+module.exports = { createProduct, getAllProduct, deleteProduct, getAllProductBySlug }
