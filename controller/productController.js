@@ -11,8 +11,8 @@ const createProduct = async (req, res) => {
         const { name, description, categories, price, quantity, specification, salePrice } = req.body;
         const images = req.files;
         console.log("file images", images);
-        
 
+        //check whether name is exists in database
         if (!name) {
             return res.status(400).json("Title is not empty");
         }
@@ -22,6 +22,8 @@ const createProduct = async (req, res) => {
             return res.status(500).json("Name already exists! Choose another one");
         }
 
+
+        //convert images to base 64
         let imgBase64URLs = [];
         if (images && images.length > 0) {
             for (let i = 0; i < images.length; i++) {
@@ -116,6 +118,25 @@ const getAllProductBySlug = async (req, res) => {
 
     } catch (error) {
         console.error(error);
+        res.status(500).json({ 
+            status: "failed",
+            message: 'Server error', error 
+        });
+    }
+}
+const getProductDetailBySlug = async (req, res) => {
+    
+    const slug = req.params.productSlug
+
+    try {
+        const product = await Product.findOne({ slug: slug })
+
+        if ( product && product.length === 0) {
+            return res.status(404).json({ message: 'No products found' });
+        }
+        res.status(200).json(product);
+    } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server error', error });
     }
 }
@@ -145,4 +166,4 @@ const deleteProduct = async (req, res) => {
 
 
 
-module.exports = { createProduct, getAllProduct, deleteProduct, getAllProductBySlug }
+module.exports = { createProduct, getAllProduct, deleteProduct, getAllProductBySlug, getProductDetailBySlug }
