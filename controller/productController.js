@@ -75,33 +75,49 @@ const createProduct = async (req, res) => {
 };
 const getAllProduct = async (req, res) => {
     try {
-        const products = await Product.find().sort({ createdAt: -1 }).populate("categories")
-        return res.status(200).json(products)
-    } catch (error) {
-        console.log(error)
-        return res.status(404).json(error)
-    }
-}
+        const page = parseInt(req.query.page) || 1; // Lấy trang hiện tại từ query string, mặc định là 1
+        const limit = 5; // Số lượng sản phẩm trên mỗi trang
+        const skip = (page - 1) * limit; // Số lượng sản phẩm cần bỏ qua để lấy trang hiện tại
 
+        // Đếm tổng số sản phẩm
+        const totalProducts = await Product.countDocuments();
+
+        // Tính tổng số trang cần thiết
+        const totalPages = Math.ceil(totalProducts / limit);
+
+        // Lấy sản phẩm theo phân trang
+        const products = await Product.find()
+            .sort({ createdAt: -1 })
+            .populate("categories")
+            .skip(skip)
+            .limit(limit);
+
+        return res.status(200).json({
+            totalProducts,
+            totalPages,
+            currentPage: page,
+            products,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(404).json(error);
+    }
+};
 const getAllProductBySlug = async (req, res) => {
     try {
-        const productSlug = req.params.slug
-        console.log("slug", productSlug);
+        const productSlug = req.params.slug;
+        const page = parseInt(req.query.page) || 1;
+        const limit = 5;
+        const skip = (page - 1) * limit;
 
-
-        // const keywords = productSlug.split(' ').filter(keyword => keyword.trim() !== '');
-
-        // if (keywords.length === 0) {
-        //     return res.status(400).json({ message: 'No valid search keywords provided' });
-        // }
-
+        // Xử lý các từ khóa từ slug
         const keywords = productSlug.replace(/-/g, ' ').split(' ').filter(keyword => keyword.trim() !== '');
 
         if (keywords.length === 0) {
             return res.status(400).json({ message: 'No valid search keywords provided' });
         }
 
-        // Construct search conditions for each keyword
+        // Tạo điều kiện tìm kiếm cho mỗi từ khóa
         const searchConditions = keywords.map(keyword => ({
             $or: [
                 { name: { $regex: keyword, $options: 'i' } },
@@ -109,21 +125,38 @@ const getAllProductBySlug = async (req, res) => {
             ]
         }));
 
-        // Use $and to ensure all keywords are present
-        const products = await Product.find({ $and: searchConditions });
+        // Đếm tổng số sản phẩm tìm được
+        const totalProducts = await Product.countDocuments({ $and: searchConditions });
+
+        // Lấy sản phẩm theo phân trang
+        const products = await Product.find({ $and: searchConditions })
+            .skip(skip)
+            .limit(limit);
+
         if (products.length === 0) {
             return res.status(404).json({ message: 'No products found' });
         }
-        res.status(200).json(products);
+
+        // Tính tổng số trang
+        const totalPages = Math.ceil(totalProducts / limit);
+
+        res.status(200).json({
+            totalProducts,
+            totalPages,
+            currentPage: page,
+            products,
+        });
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ 
             status: "failed",
-            message: 'Server error', error 
+            message: 'Server error', 
+            error 
         });
     }
-}
+};
+
 const getProductDetailBySlug = async (req, res) => {
     
     const slug = req.params.productSlug
