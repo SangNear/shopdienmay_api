@@ -12,6 +12,21 @@ const ProductSchema = new mongoose.Schema(
             require: true,
             unique: true
         },
+        original: {
+            type: String,
+        },
+        brands: {
+            type: String,
+        },
+        size: {
+            type: String
+        },
+        color: {
+            type: String
+        },
+        guarantee: {
+            type: String,
+        },
         price: {
             type: Number,
             required: true

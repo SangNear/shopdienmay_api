@@ -50,4 +50,27 @@ const createCategory = async (req, res) => {
     }
 }
 
-module.exports = { createCategory, getAllCategory }
+const deleteCategory = async (req, res) => {
+    const { categoryId } = req.params
+    try {
+        
+        const categories = await Category.findByIdAndDelete(categoryId)
+
+        if (!categories) {
+            return res.status(404).json({ message: 'Danh mục không tồn tại' });
+        }
+
+        await Product.updateMany(
+            { categories: categoryId },  // Match the string categoryId
+            { $set: { categories: null } }  // Set the categories field to null
+        );
+
+        res.status(200).json({ message: 'Xóa danh mục thành công' });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: 'Server error', error });
+    }
+}
+
+module.exports = { createCategory, getAllCategory,deleteCategory }

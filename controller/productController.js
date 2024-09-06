@@ -8,7 +8,7 @@ const { default: mongoose } = require("mongoose");
 
 const createProduct = async (req, res) => {
     try {
-        const { name, description, categories, price, quantity, specification, salePrice } = req.body;
+        const { name,original, description, categories, price, quantity, specification, salePrice } = req.body;
         const images = req.files;
         console.log("file images", images);
 
@@ -49,6 +49,7 @@ const createProduct = async (req, res) => {
             const newProduct = new Product({
                 name,
                 slug: toSlug(name),
+                original,
                 description,
                 images: imgBase64URLs,
                 categories: categories, // Using the valid category ID
@@ -64,6 +65,8 @@ const createProduct = async (req, res) => {
 
             // Save the product after successful association with the category
             await newProduct.save();
+            console.log("image submit:", images);
+            
             return res.status(200).json(newProduct);
         } else {
             return res.status(400).json("Category is required.");
@@ -76,7 +79,7 @@ const createProduct = async (req, res) => {
 const getAllProduct = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1; // Lấy trang hiện tại từ query string, mặc định là 1
-        const limit = 5; // Số lượng sản phẩm trên mỗi trang
+        const limit = 10; // Số lượng sản phẩm trên mỗi trang
         const skip = (page - 1) * limit; // Số lượng sản phẩm cần bỏ qua để lấy trang hiện tại
 
         // Đếm tổng số sản phẩm
