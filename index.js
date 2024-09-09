@@ -6,7 +6,7 @@ const dotenv = require('dotenv')
 const cors = require('cors')
 const productRoute = require('./routes/product')
 const categoryRoute = require('./routes/category')
-
+const path = require('path');
 
 
 dotenv.config()
@@ -15,7 +15,8 @@ app.use(bodyParser.json())
 app.use(cors())
 
 
-
+app.use(express.json({ limit: '10mb' })); // Increase limit as needed
+app.use(express.urlencoded({ limit: '10mb', extended: true })); // For URL-encoded bodies
 
 mongoose.connect(process.env.MONGO_URL)
     .then(() => {
@@ -28,7 +29,7 @@ mongoose.connect(process.env.MONGO_URL)
 
 app.use('/api/v1/product', productRoute)
 app.use('/api/v1/category', categoryRoute)
-
+app.use('/images', express.static(path.join(__dirname, 'images')));
 app.listen(1999, () => {
     console.log("Server is running on http://localhost:1999");
 })

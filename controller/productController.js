@@ -8,33 +8,27 @@ const { default: mongoose } = require("mongoose");
 
 const createProduct = async (req, res) => {
     try {
-        const { name,original, description, categories, price, quantity, specification, salePrice } = req.body;
-        const images = req.files;
-        console.log("file images", images);
-
-        //check whether name is exists in database
+        const { name, original, description, categories, price, quantity, specification, salePrice } = req.body;
+        const files = req.files; // Uploaded files
+        
+        // Check if name exists
         if (!name) {
-            return res.status(400).json("Title is not empty");
+            return res.status(400).json("Product name is required.");
         }
 
-        const nameIsExists = await Product.findOne({ name: name });
-        if (nameIsExists) {
-            return res.status(500).json("Name already exists! Choose another one");
+        // Check for duplicate product name
+        const nameExists = await Product.findOne({ name });
+        if (nameExists) {
+            return res.status(500).json("Product name already exists! Choose another one.");
         }
 
-
-        //convert images to base 64
-        let imgBase64URLs = [];
-        if (images && images.length > 0) {
-            for (let i = 0; i < images.length; i++) {
-                const imgPath = path.join(__dirname, "../images", images[i].filename);
-                const imgBase64 = fs.readFileSync(imgPath, { encoding: "base64" });
-                const imgBase64URL = `data:image/${path.extname(images[i].filename).slice(1)};base64,${imgBase64}`;
-                imgBase64URLs.push(imgBase64URL);
-            }
+        // Convert uploaded files to image paths (this assumes multer saves the files to a folder like /uploads)
+        let imagePaths = [];
+        if (files && files.length > 0) {
+            imagePaths = files.map(file => `/${file.filename}`); // Adjust this path based on your server config
         }
 
-        // Validate the single category ID
+        // Validate and check if the category exists
         if (categories) {
             if (!mongoose.Types.ObjectId.isValid(categories)) {
                 return res.status(400).json("Invalid category ID format.");
@@ -42,38 +36,38 @@ const createProduct = async (req, res) => {
 
             const category = await Category.findById(categories);
             if (!category) {
-                return res.status(400).json("Category ID does not exist. Please check again.");
+                return res.status(400).json("Category does not exist. Please check again.");
             }
 
-            // Create the product only if the category is valid and exists
+            // Create the new product
             const newProduct = new Product({
                 name,
                 slug: toSlug(name),
                 original,
                 description,
-                images: imgBase64URLs,
-                categories: categories, // Using the valid category ID
+                images: imagePaths, // Save the image paths as strings
+                categories,
                 quantity,
                 price,
                 salePrice,
                 specification,
             });
 
-            // Associate the product with the category
+            // Associate product with the category
             category.products.push(newProduct._id);
             await category.save();
 
-            // Save the product after successful association with the category
+            // Save the product
             await newProduct.save();
-            console.log("image submit:", images);
+            console.log("Product created with images:", imagePaths);
             
             return res.status(200).json(newProduct);
         } else {
             return res.status(400).json("Category is required.");
         }
     } catch (error) {
-        console.log(error)
-        return res.status(500).json(error)
+        console.log(error);
+        return res.status(500).json(error);
     }
 };
 const getAllProduct = async (req, res) => {
