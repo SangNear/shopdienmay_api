@@ -10,6 +10,7 @@ const createProduct = async (req, res) => {
     try {
         const { name, original, description, categories, price, quantity, specification, salePrice } = req.body;
         const files = req.files; // Uploaded files
+
         
         // Check if name exists
         if (!name) {
@@ -53,7 +54,7 @@ const createProduct = async (req, res) => {
                 specification,
             });
 
-            // Associate product with the category
+           
             category.products.push(newProduct._id);
             await category.save();
 
