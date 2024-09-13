@@ -6,6 +6,7 @@ const dotenv = require('dotenv')
 const cors = require('cors')
 const productRoute = require('./routes/product')
 const categoryRoute = require('./routes/category')
+const orderRoute = require('./routes/order')
 const path = require('path');
 
 
@@ -29,6 +30,7 @@ mongoose.connect(process.env.MONGO_URL)
 
 app.use('/api/v1/product', productRoute)
 app.use('/api/v1/category', categoryRoute)
+app.use('/api/v1/order', orderRoute)
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.listen(1999, () => {
     console.log("Server is running on http://localhost:1999");
