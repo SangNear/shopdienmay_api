@@ -50,4 +50,14 @@ const createOrder = async (req, res) => {
     }
 };
 
-module.exports = { createOrder };
+const getAllOrder = async (req, res) => {
+    try {
+        const orders = await Order.find().sort({ createdAt: -1 }).populate("products")
+        return res.status(200).json(orders)
+    } catch (error) {
+        console.log(error);
+        return res.status(404).json(error);
+    }
+}
+
+module.exports = { createOrder,getAllOrder };
