@@ -8,10 +8,10 @@ const { default: mongoose } = require("mongoose");
 
 const createProduct = async (req, res) => {
     try {
-        const { name, original, description, categories, price, quantity, specification, salePrice } = req.body;
+        const { name, original, description, categories, price, quantity, specification, salePrice, specials } = req.body;
         const files = req.files; // Uploaded files
 
-        
+
         // Check if name exists
         if (!name) {
             return res.status(400).json("Product name is required.");
@@ -52,16 +52,17 @@ const createProduct = async (req, res) => {
                 price,
                 salePrice,
                 specification,
+                specials
             });
 
-           
+
             category.products.push(newProduct._id);
             await category.save();
 
             // Save the product
             await newProduct.save();
             console.log("Product created with images:", imagePaths);
-            
+
             return res.status(200).json(newProduct);
         } else {
             return res.status(400).json("Category is required.");
@@ -147,22 +148,22 @@ const getAllProductBySlug = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ 
+        res.status(500).json({
             status: "failed",
-            message: 'Server error', 
-            error 
+            message: 'Server error',
+            error
         });
     }
 };
 
 const getProductDetailBySlug = async (req, res) => {
-    
+
     const slug = req.params.productSlug
 
     try {
         const product = await Product.findOne({ slug: slug })
 
-        if ( product && product.length === 0) {
+        if (product && product.length === 0) {
             return res.status(404).json({ message: 'No products found' });
         }
         res.status(200).json(product);
@@ -195,6 +196,37 @@ const deleteProduct = async (req, res) => {
     }
 }
 
+const updateSpecialProduct = async (req, res) => {
+    try {
+        // Extract slug and new specials value from request body
+        const { slug, specials } = req.body;
+
+        // Find the product by slug
+        const product = await Product.findOne({ slug });
+
+        // If product doesn't exist, send a 404 response
+        if (!product) {
+            return res.status(404).json({ error: "Product not found" });
+        }
+
+        // Update the specials field with the new value
+        product.specials = specials;
+
+        // Save the updated product to the database
+        await product.save();
+
+        // Respond with the updated product
+        return res.status(200).json({
+            message: "Product specials updated successfully",
+            product,
+        });
+    } catch (error) {
+        // If there's an error, respond with a 500 status and error message
+        console.error("Error updating specials:", error);
+        return res.status(500).json({ error: "Server error" });
+    }
+};
 
 
-module.exports = { createProduct, getAllProduct, deleteProduct, getAllProductBySlug, getProductDetailBySlug }
+
+module.exports = { createProduct, getAllProduct, deleteProduct, getAllProductBySlug, getProductDetailBySlug, updateSpecialProduct }

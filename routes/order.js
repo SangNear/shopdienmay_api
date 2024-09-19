@@ -1,6 +1,3 @@
-
-
-
 const { createOrder, getAllOrder } = require('../controller/orderController')
 
 const router = require('express').Router()

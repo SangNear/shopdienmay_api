@@ -54,6 +54,9 @@ const ProductSchema = new mongoose.Schema(
             type: Map,
             of: String
         },
+        specials: {
+            type: Boolean
+        }
 
     },
     {
