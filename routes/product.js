@@ -2,7 +2,7 @@ const router = require('express').Router()
 const multer = require("multer");
 const fs = require('fs');
 const path = require('path');
-const { createProduct, getAllProduct, deleteProduct, getAllProductBySlug, getProductDetailBySlug, updateSpecialProduct } = require('../controller/productController');
+const { createProduct, getAllProduct, deleteProduct, getAllProductBySlug, getProductDetailBySlug, updateSpecialProduct, getAllSpecialsProduct } = require('../controller/productController');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -17,6 +17,7 @@ const upload = multer({ storage: storage });
 
 router.post("/", upload.array("images", 10), createProduct)
 router.get("/", getAllProduct)
+router.get("/productSpecials", getAllSpecialsProduct)
 router.get("/:slug", getAllProductBySlug)
 router.get("/detail/:productSlug", getProductDetailBySlug)
 router.delete("/:productId", deleteProduct)

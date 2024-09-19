@@ -227,6 +227,18 @@ const updateSpecialProduct = async (req, res) => {
     }
 };
 
+const getAllSpecialsProduct = async (req, res) => {
+    try {
+        const products = await Product.find()
+        const productSpecials = products.filter((product) => product.specials === true)
+
+        return res.status(200).json(productSpecials)
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error', error });
+    }
+}
 
 
-module.exports = { createProduct, getAllProduct, deleteProduct, getAllProductBySlug, getProductDetailBySlug, updateSpecialProduct }
+
+module.exports = { createProduct, getAllProduct, deleteProduct, getAllProductBySlug, getProductDetailBySlug, updateSpecialProduct, getAllSpecialsProduct }
