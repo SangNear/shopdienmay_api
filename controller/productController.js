@@ -8,7 +8,7 @@ const { default: mongoose } = require("mongoose");
 
 const createProduct = async (req, res) => {
     try {
-        const { name, original, description, categories, price, quantity, specification, salePrice, specials } = req.body;
+        const { name, brands, original, description, categories, price, quantity, specification, salePrice, specials } = req.body;
         const files = req.files; // Uploaded files
 
 
@@ -45,6 +45,7 @@ const createProduct = async (req, res) => {
                 name,
                 slug: toSlug(name),
                 original,
+                brands,
                 description,
                 images: imagePaths, // Save the image paths as strings
                 categories,
