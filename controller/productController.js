@@ -240,6 +240,78 @@ const getAllSpecialsProduct = async (req, res) => {
     }
 }
 
+const editProduct = async (req, res) => {
+    try {
+        const { productId } = req.params; // Product ID from request params
+        const { name, brands, original, description, categories, price, quantity, specification, salePrice, specials } = req.body;
+        const files = req.files; // Uploaded files
+
+        // Check if product exists
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json("Product not found.");
+        }
+
+        // Check for duplicate product name if name is updated
+        if (name && name !== product.name) {
+            const nameExists = await Product.findOne({ name });
+            if (nameExists) {
+                return res.status(400).json("Product name already exists! Choose another one.");
+            }
+            product.name = name;
+            product.slug = toSlug(name);
+        }
+
+        // Handle image updates
+        let imagePaths = product.images; // Keep existing images if no new ones are uploaded
+        if (files && files.length > 0) {
+            imagePaths = files.map(file => `/${file.filename}`); // Save new image paths
+        }
+
+        // Validate and update category if provided
+        if (categories && categories !== product.categories.toString()) {
+            if (!mongoose.Types.ObjectId.isValid(categories)) {
+                return res.status(400).json("Invalid category ID format.");
+            }
+
+            const category = await Category.findById(categories);
+            if (!category) {
+                return res.status(400).json("Category does not exist. Please check again.");
+            }
+
+            // Remove product from old category
+            const oldCategory = await Category.findById(product.categories);
+            if (oldCategory) {
+                oldCategory.products = oldCategory.products.filter(prodId => prodId.toString() !== id);
+                await oldCategory.save();
+            }
+
+            // Add product to new category
+            category.products.push(id);
+            await category.save();
+            product.categories = categories;
+        }
+
+        // Update other product fields if provided
+        product.original = original ?? product.original;
+        product.brands = brands ?? product.brands;
+        product.description = description ?? product.description;
+        product.price = price ?? product.price;
+        product.salePrice = salePrice ?? product.salePrice;
+        product.quantity = quantity ?? product.quantity;
+        product.specification = specification ?? product.specification;
+        product.specials = specials ?? product.specials;
+        product.images = imagePaths;
+
+        // Save updated product
+        await product.save();
+
+        return res.status(200).json(product);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json(error);
+    }
+};
 
 
-module.exports = { createProduct, getAllProduct, deleteProduct, getAllProductBySlug, getProductDetailBySlug, updateSpecialProduct, getAllSpecialsProduct }
+module.exports = { createProduct,editProduct, getAllProduct, deleteProduct, getAllProductBySlug, getProductDetailBySlug, updateSpecialProduct, getAllSpecialsProduct }
