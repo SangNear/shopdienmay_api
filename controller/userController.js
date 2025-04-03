@@ -19,6 +19,7 @@ const login = async (req,res) => {
             secure: process.env.NODE_ENV === 'production', // Set `secure: true` chỉ khi production
             sameSite: "None",  // Cho phép cookie được gửi trong các yêu cầu cross-site
             maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 ngày
+            domain: ".dienmaygiatotsaigon.vn",
         });
 
         res.status(201).json({
